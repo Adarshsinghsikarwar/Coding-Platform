@@ -1,4 +1,3 @@
-import { parse } from "dotenv";
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -11,24 +10,26 @@ const userSchema = new mongoose.Schema(
     },
     lastName: {
       type: String,
-      minLength: 2,
+      minLength: 0,
       maxLength: 20,
+      default: "",
     },
 
     emailId: {
       type: String,
       required: true,
       unique: true,
-      parse: true,
       trim: true,
       immutable: true,
       lowercase: true,
+      sparse : true,
     },
 
     age: {
       type: Number,
       min: 5,
       max: 80,
+      default: 18,
     },
     role: {
       type: String,
@@ -38,6 +39,11 @@ const userSchema = new mongoose.Schema(
     problemSolved: {
       type: [String],
       default: [],
+    },
+    password: {
+      type: String,
+      required: true,
+      minLength: 8,
     },
   },
   { timestamps: true }
