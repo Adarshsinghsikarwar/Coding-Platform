@@ -1,4 +1,5 @@
 import { body } from "express-validator";
+import { validate } from "../middlewares/validate.middleware.js";
 
 export const createProblemValidator = [
   body("title").notEmpty().withMessage("Title is required"),
@@ -17,5 +18,6 @@ export const createProblemValidator = [
   body("referenceSolution")
     .isArray()
     .withMessage("Reference solution must be an array"),
+    validate
 ];
   

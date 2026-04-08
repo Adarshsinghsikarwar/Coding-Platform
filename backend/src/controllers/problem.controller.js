@@ -1,144 +1,101 @@
 import mongoose from "mongoose";
 import problemModel from "../models/problem.model.js";
+import {
+  normalizeTags,
+  validateReferenceSolutions,
+} from "../services/problemValidation.service.js";
 
 export async function createProblem(req, res) {
   try {
-    const {
-      title,
-      description,
-      difficulty,
-      tags,
-      visibleTestCases,
-      hiddenTestCases,
-      startCode,
-      referenceSolution,
-    } = req.body;
+    const { visibleTestCases, referenceSolution } = req.body;
 
-    const problem = await problemModel.create({
-      title,
-      description,
-      difficulty,
-      tags,
-      visibleTestCases,
-      hiddenTestCases,
-      startCode,
-      referenceSolution,
-      problemCreator: req.user._id,
+    await validateReferenceSolutions(visibleTestCases, referenceSolution);
+
+    const problem = new problemModel({
+      ...req.body,
+      tags: normalizeTags(req.body.tags),
+      problemCreator: req.user.id,
     });
 
-    return res
-      .status(201)
-      .json({ message: "Problem created successfully", problem });
+    await problem.save();
+    return res.status(201).json({
+      message: "Problem created successfully",
+      problem,
+    });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json(err.payload);
+    }
+
     console.error("Error occurred while creating problem:", err);
-    return res.status(500).json({ message: "Server error" });
-  }
-}
-
-export async function getAllProblems(req, res) {
-  try {
-    const problems = await problemModel
-      .find()
-      .populate("problemCreator", "firstName lastName emailId")
-      .sort({ createdAt: -1 });
-
-    return res
-      .status(200)
-      .json({ message: "Problems retrieved successfully", problems });
-  } catch (err) {
-    console.error("Error occurred while fetching problems:", err);
-    return res.status(500).json({ message: "Server error" });
-  }
-}
-
-export async function getProblemById(req, res) {
-  try {
-    const problemId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(problemId)) {
-      return res.status(400).json({ message: "Invalid problem id" });
-    }
-
-    const problem = await problemModel
-      .findById(problemId)
-      .populate("problemCreator", "firstName lastName emailId");
-
-    if (!problem) {
-      return res.status(404).json({ message: "Problem not found" });
-    }
-
-    return res
-      .status(200)
-      .json({ message: "Problem retrieved successfully", problem });
-  } catch (err) {
-    console.error("Error occurred while fetching problem:", err);
-    return res.status(500).json({ message: "Server error" });
-  }
-}
-
-export async function getAllSolvedProblemsByUser(req, res) {
-  try {
-    const solvedProblemIds = req.user.problemSolved || [];
-
-    const problems = await problemModel
-      .find({ _id: { $in: solvedProblemIds } })
-      .populate("problemCreator", "firstName lastName emailId")
-      .sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      message: "Solved problems retrieved successfully",
-      count: problems.length,
-      problems,
+    const apiMessage = err?.response?.data || err?.message;
+    return res.status(500).json({
+      message: "Server error while validating reference solution",
+      error: apiMessage,
     });
-  } catch (err) {
-    console.error("Error occurred while fetching solved problems:", err);
-    return res.status(500).json({ message: "Server error" });
   }
 }
 
 export async function updateProblem(req, res) {
   try {
-    const problemId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(problemId)) {
+    const { id } = req.params;
+    const { visibleTestCases, referenceSolution } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ message: "Missing ID Field" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid problem id" });
     }
 
-    const updatedProblem = await problemModel.findByIdAndUpdate(
-      problemId,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedProblem) {
+    const existingProblem = await problemModel.findById(id);
+    if (!existingProblem) {
       return res.status(404).json({ message: "Problem not found" });
     }
 
-    return res
-      .status(200)
-      .json({
-        message: "Problem updated successfully",
-        problem: updatedProblem,
-      });
+    await validateReferenceSolutions(visibleTestCases, referenceSolution);
+
+    const payload = {
+      ...req.body,
+      problemCreator: existingProblem.problemCreator,
+      tags: normalizeTags(req.body.tags),
+    };
+
+    const updatedProblem = await problemModel.findByIdAndUpdate(id, payload, {
+      runValidators: true,
+      new: true,
+    });
+
+    return res.status(200).json({
+      message: "Problem updated successfully",
+      problem: updatedProblem,
+    });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json(err.payload);
+    }
+
     console.error("Error occurred while updating problem:", err);
-    return res.status(500).json({ message: "Server error" });
+    const apiMessage = err?.response?.data || err?.message;
+    return res.status(500).json({
+      message: "Server error while validating reference solution",
+      error: apiMessage,
+    });
   }
 }
 
 export async function deleteProblem(req, res) {
+  const { id } = req.params;
   try {
-    const problemId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(problemId)) {
-      return res.status(400).json({ message: "Invalid problem id" });
-    }
+    if (!id) return res.status(400).send("ID is Missing");
 
-    const deletedProblem = await problemModel.findByIdAndDelete(problemId);
-    if (!deletedProblem) {
-      return res.status(404).json({ message: "Problem not found" });
-    }
+    const deletedProblem = await problemModel.findByIdAndDelete(id);
 
-    return res.status(200).json({ message: "Problem deleted successfully" });
+    if (!deletedProblem) return res.status(404).send("Problem is Missing");
+
+    res.status(200).send("Successfully Deleted");
   } catch (err) {
-    console.error("Error occurred while deleting problem:", err);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).send("Error: " + err);
   }
 }

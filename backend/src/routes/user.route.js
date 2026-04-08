@@ -4,11 +4,16 @@ import * as userController from "../controllers/user.controller.js";
 
 const userRouter = express.Router();
 
-userRouter.get("/:id", authUser, userController.getProblemById);
-userRouter.get("/", authUser, userController.getAllProblems);
+userRouter.get("/problemById/:id", authUser, userController.getProblemById);
+userRouter.get("/getAllProblem", authUser, userController.getAllProblem);
 userRouter.get(
-  "/solvedProblems",
+  "/problemSolvedByUser",
   authUser,
-  userController.getAllSolvedProblemsByUser
+  userController.solvedAllProblembyUser
+);
+userRouter.get(
+  "/getSubmission/:id",
+  authUser,
+  userController.getSubmissionProblem
 );
 export default userRouter;

@@ -308,3 +308,18 @@ export async function registerAdmin(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function deleteProfile(req, res) {
+  try {
+    const userId = req.user.id;
+
+    await userModel.findByIdAndDelete(userId);
+
+    // await submissionModel.deleteMany({ userId: userId });
+
+    res.status(200).json({ message: "User profile deleted successfully" });
+  } catch (err) {
+    console.error("Error occurred while deleting user profile:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+}

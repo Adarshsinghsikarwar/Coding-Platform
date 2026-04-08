@@ -32,7 +32,7 @@ const problemSchema = new mongoose.Schema({
       },
       explanation: {
         type: String,
-        required: false,
+        required: true,
       },
     },
   ],
@@ -52,7 +52,9 @@ const problemSchema = new mongoose.Schema({
     {
       language: {
         type: String,
-        enum: ["JavaScript", "Python", "Java"],
+        lowercase: true,
+        trim: true,
+        enum: ["javascript", "c++", "java"],
         required: true,
       },
       initialCode: {
@@ -65,7 +67,9 @@ const problemSchema = new mongoose.Schema({
     {
       language: {
         type: String,
-        enum: ["JavaScript", "Python", "Java"],
+        lowercase: true,
+        trim: true,
+        enum: ["javascript", "c++", "java"],
         required: true,
       },
       completeCode: {

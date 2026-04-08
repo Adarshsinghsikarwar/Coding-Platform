@@ -17,4 +17,7 @@ export const config = {
   PORT: process.env.PORT,
   MONGO_URI: process.env.MONGO_URI,
   JWT_SECRET: process.env.JWT_SECRET,
+  RAPIDAPI_KEY: process.env.RAPIDAPI_KEY,
+  RAPIDAPI_HOST: process.env.RAPIDAPI_HOST,
+  JUDGE0_URL: process.env.JUDGE0_URL || "https://ce.judge0.com",
 };

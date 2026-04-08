@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       immutable: true,
       lowercase: true,
-      sparse : true,
+      sparse: true,
     },
 
     age: {
@@ -37,8 +37,14 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     problemSolved: {
-      type: [String],
-      default: [],
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Problem",
+          unique: true,
+          // sparse: true,
+        },
+      ],
     },
     password: {
       type: String,
@@ -48,6 +54,12 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.post("findOneAndDelete", async function (userInfo) {
+  if (userInfo) {
+    await mongoose.model("submission").deleteMany({ userId: userInfo._id });
+  }
+});
 
 const userModel = mongoose.model("User", userSchema);
 

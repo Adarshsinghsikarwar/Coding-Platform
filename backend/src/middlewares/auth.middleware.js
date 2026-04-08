@@ -37,7 +37,7 @@ export async function authAdmin(req, res, next) {
     if (!user || user.role !== "admin") {
       return res.status(403).json({ message: "Forbidden" });
     }
-    req.user = user;
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });
