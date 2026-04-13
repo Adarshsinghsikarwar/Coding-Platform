@@ -42,17 +42,25 @@ const userSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: "Problem",
           unique: true,
-          // sparse: true,
+          sparse: true,
         },
       ],
     },
     password: {
       type: String,
-      required: true,
       minLength: 8,
     },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    verified: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.post("findOneAndDelete", async function (userInfo) {
