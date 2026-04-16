@@ -19,5 +19,6 @@ problemRouter.put(
   problemController.updateProblem
 );
 problemRouter.delete("/delete/:id", authAdmin, problemController.deleteProblem);
+problemRouter.get("/:id", authAdmin, problemController.getProblemByIdForAdmin);
 
 export default problemRouter;

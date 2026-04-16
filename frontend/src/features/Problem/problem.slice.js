@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  problem: null,
+  problems: [],
   loading: false,
   error: null,
 };
@@ -11,13 +11,17 @@ const problemSlice = createSlice({
   initialState,
   reducers: {
     setAllProblem(state, action) {
-      state.problem = action.payload;
+      state.problems = action.payload;
     },
     setLoading(state, action) {
       state.loading = action.payload;
     },
+    setProblemError(state, action) {
+      state.error = action.payload;
+    },
   },
 });
 
-export const { setAllProblem, setLoading } = problemSlice.actions;
+export const { setAllProblem, setLoading, setProblemError } =
+  problemSlice.actions;
 export default problemSlice.reducer;

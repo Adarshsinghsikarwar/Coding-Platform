@@ -1,23 +1,55 @@
 import problemModel from "../models/problem.model.js";
 import submitModel from "../models/submit.model.js";
+import { fetchAllProblems } from "../services/problem.service.js";
 
 export async function getProblemById(req, res) {
-  const problemId = req.params.id;
-  // Logic to get the problem with the given ID
-  res.send(`Get problem with ID: ${problemId}`);
+  try {
+    const problemId = req.params.id;
+
+    const problem = await problemModel
+      .findById(problemId)
+      .select("-hiddenTestCases")
+      .lean();
+
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        message: "Problem not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      problem,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching problem",
+    });
+  }
 }
 
 export const getAllProblem = async (req, res) => {
   try {
-    const getProblem = await problemModel
-      .find({})
-      .select("_id title difficulty tags");
+    const { status, difficulty, tag } = req.query;
 
-    if (getProblem.length == 0)
-      return res.status(404).send("Problem is Missing");
+    const getProblem = await fetchAllProblems({
+      userId: req.user._id,
+      status,
+      difficulty,
+      tag,
+    });
+
+    if (getProblem.length === 0) {
+      return res.status(200).json({
+        success: true,
+        getProblem: [],
+      });
+    }
 
     res.status(200).json({
-      sucess: true,
+      success: true,
       getProblem,
     });
   } catch (err) {

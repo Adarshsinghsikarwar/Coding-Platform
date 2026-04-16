@@ -99,3 +99,33 @@ export async function deleteProblem(req, res) {
     res.status(500).send("Error: " + err);
   }
 }
+
+export async function getProblemByIdForAdmin(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Missing ID Field" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid problem id" });
+    }
+
+    const problem = await problemModel.findById(id).lean();
+
+    if (!problem) {
+      return res.status(404).json({ message: "Problem not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      problem,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching problem",
+    });
+  }
+}

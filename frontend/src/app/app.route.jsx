@@ -6,6 +6,9 @@ import VerifyOtp from "../features/auth/pages/VerifyOtp";
 import SetPassword from "../features/auth/pages/SetPassword";
 import ForgotPassword from "../features/auth/pages/ForgotPassword";
 import ResetPassword from "../features/auth/pages/ResetPassword";
+import CreateProblem from "../features/Problem/pages/CreateProblem";
+import Admin from "../features/Problem/pages/Admin";
+import ProblemPage from "../features/user/pages/ProblemPage";
 
 const router = createBrowserRouter([
   {
@@ -15,6 +18,14 @@ const router = createBrowserRouter([
   {
     path: "/home",
     element: <Home />,
+  },
+  {
+    path: "/admin/create-problem",
+    element: <CreateProblem />,
+  },
+  {
+    path: "/admin/problems",
+    element: <Admin />,
   },
   {
     path: "/login",
@@ -39,6 +50,10 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPassword />,
+  },
+  {
+    path: "/problem/:problemId",
+    element: <ProblemPage />,
   },
 ]);
 

@@ -5,6 +5,11 @@ export const registerUser = (data) => {
   return api.post("/auth/register", data);
 };
 
+// POST /auth/report-invalid-registration-attempt
+export const reportInvalidRegistrationAttempt = (data) => {
+  return api.post("/auth/report-invalid-registration-attempt", data);
+};
+
 // POST /auth/login
 export const loginUser = (data) => {
   return api.post("/auth/login", data);

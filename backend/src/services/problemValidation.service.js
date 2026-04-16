@@ -14,15 +14,32 @@ function normalizeJavaForJudge(code) {
     };
   }
 
-  if (!/(?:public\s+)?class\s+Main\b/.test(code)) {
+  if (/(?:public\s+)?class\s+Main\b/.test(code)) {
+    return { ok: true, sourceCode: code };
+  }
+
+  const classMatch = code.match(
+    /(?:public\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)\b/
+  );
+  if (!classMatch) {
     return {
       ok: false,
-      message: "Java reference solution must define class Main",
-      hint: "Use class Main as the runnable class",
+      message: "Java reference solution must define at least one class",
+      hint: "Provide a class with a public static void main(String[] args) method",
     };
   }
 
-  return { ok: true, sourceCode: code };
+  const primaryClassName = classMatch[1];
+
+  // If a non-Main class is used, add a thin Main wrapper for judge execution.
+  const dePublicizedSource = code.replace(
+    new RegExp(`public\\s+class\\s+${primaryClassName}\\b`),
+    `class ${primaryClassName}`
+  );
+
+  const wrappedSource = `${dePublicizedSource}\n\nclass Main {\n  public static void main(String[] args) {\n    ${primaryClassName}.main(args);\n  }\n}`;
+
+  return { ok: true, sourceCode: wrappedSource };
 }
 
 function prepareSourceCodeForJudge(language, completeCode) {
@@ -68,8 +85,15 @@ export async function validateReferenceSolutions(
     }));
 
     const submitResult = await submitBatch(submissions);
-    const resultToken = submitResult.map((item) => item.token);
-    const finalResults = await submitToken(resultToken);
+    const batchAlreadyFinal = submitResult.every(
+      (item) => (item.status?.id ?? item.status?._id ?? 0) > 2
+    );
+
+    const finalResults = batchAlreadyFinal
+      ? submitResult
+      : await submitToken(
+          submitResult.map((item) => item.token).filter(Boolean)
+        );
 
     for (let i = 0; i < finalResults.length; i++) {
       const statusId =

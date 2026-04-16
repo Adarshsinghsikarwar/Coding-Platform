@@ -64,6 +64,10 @@ const waiting = async (timer) => {
 
 export const submitToken = async (resultToken) => {
   try {
+    if (!Array.isArray(resultToken) || resultToken.length === 0) {
+      throw new Error("No Judge0 tokens received for polling");
+    }
+
     const options = {
       method: "GET",
       url: `${config.JUDGE0_URL}/submissions/batch`,
@@ -78,7 +82,13 @@ export const submitToken = async (resultToken) => {
     async function fetchData() {
       try {
         const response = await axios.request(options);
-        return response.data;
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+        if (Array.isArray(response.data?.submissions)) {
+          return response.data.submissions;
+        }
+        throw new Error("Unexpected Judge0 token response format");
       } catch (err) {
         const apiMessage = err?.response?.data || err.message;
         console.error("Error fetching batch results:", apiMessage);
@@ -88,12 +98,12 @@ export const submitToken = async (resultToken) => {
 
     while (true) {
       const result = await fetchData();
-      const IsresultObtained = result.submissions.every(
+      const IsresultObtained = result.every(
         (submission) =>
           (submission.status?.id ?? submission.status?._id ?? 0) > 2
       );
       if (IsresultObtained) {
-        return result.submissions;
+        return result;
       }
 
       await waiting(1000);

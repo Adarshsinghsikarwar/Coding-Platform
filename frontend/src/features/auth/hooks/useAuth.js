@@ -1,50 +1,73 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router";
-import { getMe } from "../services/auth.service";
-import { setUser, setLoading } from "../auth.slice";
+import { getMe, refreshAccessToken } from "../services/auth.service";
+import { logout, setUser, setLoading } from "../auth.slice";
 
 export function useAuth() {
   const dispatch = useDispatch();
   const { user, accessToken, isLoading } = useSelector((state) => state.auth);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if there's an accessToken in the URL (from Google OAuth redirect)
-    const tokenFromUrl = searchParams.get("accessToken");
+    const bootstrapAuth = async () => {
+      // If user is already hydrated in store, nothing to do.
+      if (user && accessToken) return;
 
-    if (tokenFromUrl) {
-      // Remove the token from the URL for security
-      searchParams.delete("accessToken");
-      setSearchParams(searchParams, { replace: true });
+      try {
+        dispatch(setLoading(true));
 
-      // Fetch user data with the token
-      fetchUser(tokenFromUrl);
-      return;
-    }
+        const url = new URL(window.location.href);
+        const tokenFromUrl = url.searchParams.get("accessToken");
 
-    // If we already have a token in state, fetch user data
-    if (accessToken && !user) {
-      fetchUser(accessToken);
-    }
-  }, []);
+        if (tokenFromUrl) {
+          const meResponse = await getMe(tokenFromUrl);
+          dispatch(
+            setUser({
+              user: meResponse.data.user,
+              accessToken: tokenFromUrl,
+            })
+          );
 
-  const fetchUser = async (token) => {
-    try {
-      dispatch(setLoading(true));
-      const response = await getMe(token);
-      dispatch(
-        setUser({
-          user: response.data.user,
-          accessToken: token,
-        })
-      );
-    } catch (error) {
-      console.error("Failed to fetch user:", error);
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
+          url.searchParams.delete("accessToken");
+          window.history.replaceState({}, "", url.toString());
+          return;
+        }
+
+        if (accessToken) {
+          const meResponse = await getMe(accessToken);
+          dispatch(
+            setUser({
+              user: meResponse.data.user,
+              accessToken,
+            })
+          );
+          return;
+        }
+
+        const refreshResponse = await refreshAccessToken();
+        const nextAccessToken = refreshResponse.data?.accessToken;
+
+        if (!nextAccessToken) {
+          dispatch(logout());
+          return;
+        }
+
+        const meResponse = await getMe(nextAccessToken);
+        dispatch(
+          setUser({
+            user: meResponse.data.user,
+            accessToken: nextAccessToken,
+          })
+        );
+      } catch {
+        // No active session is a valid state, so keep this silent.
+        dispatch(logout());
+      } finally {
+        dispatch(setLoading(false));
+      }
+    };
+
+    bootstrapAuth();
+  }, [accessToken, dispatch, user]);
 
   return { user, isLoading, accessToken };
 }

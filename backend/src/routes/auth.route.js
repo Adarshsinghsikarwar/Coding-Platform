@@ -12,6 +12,12 @@ const router = express.Router();
 // POST :  api/auth/register
 router.post("/register", validateRegistration, authControllers.register);
 
+// POST : api/auth/report-invalid-registration-attempt
+router.post(
+  "/report-invalid-registration-attempt",
+  authControllers.reportInvalidRegistrationAttempt
+);
+
 // POST :  api/auth/verify-otp
 router.post("/verify-otp", authControllers.verifyOtp);
 
@@ -47,7 +53,7 @@ router.get(
   "/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
-  }),
+  })
 );
 
 // GET :  api/auth/google/callback
@@ -57,7 +63,7 @@ router.get(
     failureRedirect: "/login",
     session: false,
   }),
-  authControllers.googleCallback,
+  authControllers.googleCallback
 );
 
 // POST :  api/auth/forgot-password

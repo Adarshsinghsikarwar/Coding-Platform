@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken";
 import { config } from "../config/config.js";
 import sessionModel from "../models/session.model.js";
 import { sendEmail } from "../services/email.service.js";
+import {
+  sendRegistrationSuccessAlert,
+  sendWrongEmailRegistrationAlert,
+} from "../services/registrationAlert.service.js";
 import OtpUtil, { getWelcomeHtml } from "../utils/Otp.js";
 
 // ──────────────────────────────────────────────
@@ -22,7 +26,7 @@ async function findSessionByRefreshToken(refreshToken) {
     for (const session of activeSessions) {
       const isMatch = await bcrypt.compare(
         refreshToken,
-        session.refreshTokenHash,
+        session.refreshTokenHash
       );
       if (isMatch) {
         return { session, decoded };
@@ -42,7 +46,7 @@ async function createSessionAndTokens(user, req) {
   const refreshToken = jwt.sign(
     { id: user._id, role: user.role },
     config.JWT_SECRET,
-    { expiresIn: "7d" },
+    { expiresIn: "7d" }
   );
 
   const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
@@ -58,10 +62,44 @@ async function createSessionAndTokens(user, req) {
   const accessToken = jwt.sign(
     { id: user._id, role: user.role, sessionId: session._id },
     config.JWT_SECRET,
-    { expiresIn: "15m" },
+    { expiresIn: "15m" }
   );
 
   return { refreshToken, accessToken };
+}
+
+// ──────────────────────────────────────────────
+// POST /api/auth/report-invalid-registration-attempt
+// Used by frontend when client-side validation blocks invalid email submit.
+// ──────────────────────────────────────────────
+export async function reportInvalidRegistrationAttempt(req, res) {
+  try {
+    const attemptedEmail = String(req.body?.emailId || "").trim();
+    const reason = String(req.body?.reason || "Invalid email format").trim();
+
+    if (!attemptedEmail) {
+      return res.status(400).json({ message: "emailId is required" });
+    }
+
+    const alertResult = await sendWrongEmailRegistrationAlert({
+      attemptedEmail,
+      reason,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      source: "frontend-validation",
+    });
+
+    return res.status(200).json({
+      message: "Attempt recorded",
+      alertSent: Boolean(alertResult?.ok),
+    });
+  } catch (err) {
+    console.error("Error while reporting invalid registration attempt:", err);
+    return res.status(200).json({
+      message: "Attempt recorded",
+      alertSent: false,
+    });
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -70,11 +108,30 @@ async function createSessionAndTokens(user, req) {
 export async function register(req, res) {
   try {
     const { firstName, emailId, password, age, lastName } = req.body;
+    const normalizedEmail = String(emailId || "")
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: "Email is required" });
+    }
 
     // Check if user already exists
-    const existingUser = await userModel.findOne({ emailId });
+    const existingUser = await userModel.findOne({ emailId: normalizedEmail });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      if (!existingUser.verified) {
+        return res.status(409).json({
+          message:
+            "Email is already registered but not verified. Please verify using OTP.",
+          email: existingUser.emailId,
+          requiresOtp: true,
+        });
+      }
+
+      return res.status(400).json({
+        message: "User already exists",
+        email: existingUser.emailId,
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -82,7 +139,7 @@ export async function register(req, res) {
     // Create user (not verified yet)
     const newUser = new userModel({
       firstName,
-      emailId,
+      emailId: normalizedEmail,
       password: hashedPassword,
       age,
       role: "user",
@@ -94,18 +151,38 @@ export async function register(req, res) {
 
     // Generate OTP and send email
     const otp = OtpUtil.generateOtp();
-    await otpModel.create({ email: emailId, otp: String(otp) });
+    await otpModel.create({ email: normalizedEmail, otp: String(otp) });
 
     const otpHtml = OtpUtil.getOtpHtml(otp);
-    await sendEmail(emailId, "Verify your email - OTP", `Your OTP is: ${otp}`, otpHtml);
+    await sendEmail(
+      normalizedEmail,
+      "Verify your email - OTP",
+      `Your OTP is: ${otp}`,
+      otpHtml
+    );
 
     res.status(201).json({
-      message: "Registration successful. Please verify your email with the OTP sent.",
-      email: emailId,
+      message:
+        "Registration successful. Please verify your email with the OTP sent.",
+      email: normalizedEmail,
     });
   } catch (err) {
     console.error("Error occurred while registering user:", err);
-    res.status(500).json({ message: "Server error", error: err.message, stack: err.stack });
+
+    if (err?.code === 11000 && err?.keyPattern?.emailId) {
+      return res.status(400).json({
+        message: "User already exists",
+        email: String(req.body?.emailId || "")
+          .trim()
+          .toLowerCase(),
+      });
+    }
+
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+      email: req.body?.emailId || null,
+    });
   }
 }
 
@@ -147,8 +224,19 @@ export async function verifyOtp(req, res) {
       welcomeHtml
     );
 
+    // Notify admin in plain status format (without OTP details).
+    await sendRegistrationSuccessAlert({
+      firstName: user.firstName,
+      emailId: user.emailId,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+
     // Create session and tokens
-    const { refreshToken, accessToken } = await createSessionAndTokens(user, req);
+    const { refreshToken, accessToken } = await createSessionAndTokens(
+      user,
+      req
+    );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -196,7 +284,12 @@ export async function resendOtp(req, res) {
     await otpModel.create({ email, otp: String(otp) });
 
     const otpHtml = OtpUtil.getOtpHtml(otp);
-    await sendEmail(email, "Verify your email - OTP", `Your OTP is: ${otp}`, otpHtml);
+    await sendEmail(
+      email,
+      "Verify your email - OTP",
+      `Your OTP is: ${otp}`,
+      otpHtml
+    );
 
     res.status(200).json({ message: "OTP resent successfully" });
   } catch (err) {
@@ -219,12 +312,17 @@ export async function login(req, res) {
 
     // Check if user registered via Google
     if (user.authProvider === "google") {
-      return res.status(400).json({ message: "This account uses Google login. Please sign in with Google." });
+      return res.status(400).json({
+        message: "This account uses Google login. Please sign in with Google.",
+      });
     }
 
     // Check if user is verified
     if (!user.verified) {
-      return res.status(403).json({ message: "Please verify your email first", email: user.emailId });
+      return res.status(403).json({
+        message: "Please verify your email first",
+        email: user.emailId,
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -233,7 +331,10 @@ export async function login(req, res) {
     }
 
     // Create session and tokens
-    const { refreshToken, accessToken } = await createSessionAndTokens(user, req);
+    const { refreshToken, accessToken } = await createSessionAndTokens(
+      user,
+      req
+    );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -322,7 +423,7 @@ export async function logoutAll(req, res) {
 
     await sessionModel.updateMany(
       { user: decoded.id, revoked: false },
-      { revoked: true },
+      { revoked: true }
     );
 
     res.clearCookie("refreshToken", {
@@ -364,7 +465,7 @@ export async function refreshToken(req, res) {
       config.JWT_SECRET,
       {
         expiresIn: "15m",
-      },
+      }
     );
 
     const newRefreshToken = jwt.sign(
@@ -372,7 +473,7 @@ export async function refreshToken(req, res) {
       config.JWT_SECRET,
       {
         expiresIn: "7d",
-      },
+      }
     );
 
     const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
@@ -471,7 +572,10 @@ export async function googleCallback(req, res) {
     // Returning user — already has a password — log them in directly
 
     // Create session and tokens
-    const { refreshToken, accessToken } = await createSessionAndTokens(user, req);
+    const { refreshToken, accessToken } = await createSessionAndTokens(
+      user,
+      req
+    );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -497,7 +601,9 @@ export async function setPassword(req, res) {
     const { token, password } = req.body;
 
     if (!token || !password) {
-      return res.status(400).json({ message: "Token and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Token and password are required" });
     }
 
     // Verify the temp token issued during Google callback
@@ -505,7 +611,9 @@ export async function setPassword(req, res) {
     try {
       decoded = jwt.verify(token, config.JWT_SECRET);
     } catch {
-      return res.status(401).json({ message: "Invalid or expired token. Please sign in with Google again." });
+      return res.status(401).json({
+        message: "Invalid or expired token. Please sign in with Google again.",
+      });
     }
 
     // Make sure this token was issued only for set-password
@@ -532,7 +640,10 @@ export async function setPassword(req, res) {
     );
 
     // Create session and return tokens — user is now logged in
-    const { refreshToken, accessToken } = await createSessionAndTokens(user, req);
+    const { refreshToken, accessToken } = await createSessionAndTokens(
+      user,
+      req
+    );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -569,7 +680,10 @@ export async function forgotPassword(req, res) {
     }
 
     if (user.authProvider === "google") {
-      return res.status(400).json({ message: "This account uses Google login. You cannot reset password here." });
+      return res.status(400).json({
+        message:
+          "This account uses Google login. You cannot reset password here.",
+      });
     }
 
     // Delete any old OTPs
@@ -580,7 +694,12 @@ export async function forgotPassword(req, res) {
     await otpModel.create({ email: emailId, otp: String(otp) });
 
     const otpHtml = OtpUtil.getOtpHtml(otp);
-    await sendEmail(emailId, "Password Reset - OTP", `Your OTP is: ${otp}`, otpHtml);
+    await sendEmail(
+      emailId,
+      "Password Reset - OTP",
+      `Your OTP is: ${otp}`,
+      otpHtml
+    );
 
     res.status(200).json({ message: "Password reset OTP sent to your email" });
   } catch (err) {
@@ -597,7 +716,9 @@ export async function resetPassword(req, res) {
     const { emailId, otp, newPassword } = req.body;
 
     if (!emailId || !otp || !newPassword) {
-      return res.status(400).json({ message: "Email, OTP, and new password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email, OTP, and new password are required" });
     }
 
     const user = await userModel.findOne({ emailId });
@@ -605,7 +726,10 @@ export async function resetPassword(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const otpRecord = await otpModel.findOne({ email: emailId, otp: String(otp) });
+    const otpRecord = await otpModel.findOne({
+      email: emailId,
+      otp: String(otp),
+    });
     if (!otpRecord) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
@@ -618,7 +742,9 @@ export async function resetPassword(req, res) {
     // Clean up OTP
     await otpModel.deleteMany({ email: emailId });
 
-    res.status(200).json({ message: "Password reset successfully. You can now log in." });
+    res
+      .status(200)
+      .json({ message: "Password reset successfully. You can now log in." });
   } catch (err) {
     console.error("Error occurred while resetting password:", err);
     res.status(500).json({ message: "Server error" });
