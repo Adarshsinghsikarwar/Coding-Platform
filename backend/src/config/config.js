@@ -45,4 +45,5 @@ export const config = {
   REGISTRATION_ALERT_EMAIL: process.env.REGISTRATION_ALERT_EMAIL,
   GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD,
   FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
+  GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || "/api/auth/google/callback",
 };

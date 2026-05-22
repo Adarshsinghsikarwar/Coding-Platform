@@ -17,6 +17,7 @@ import userModel from "./models/user.model.js";
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
+app.set("trust proxy", true);
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
@@ -36,7 +37,7 @@ passport.use(
     {
       clientID: config.GOOGLE_CLIENT_ID,
       clientSecret: config.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/api/auth/google/callback",
+      callbackURL: config.GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
