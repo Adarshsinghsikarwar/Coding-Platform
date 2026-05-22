@@ -75,7 +75,11 @@ app.use("/api/problemSubmitting", submitRoute);
 
 
 // Serve static files from the React frontend build
-const pathName = path.resolve(path.join(path.resolve(), "dist"));
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const pathName = path.resolve(path.join(__dirname, "../dist"));
+
 app.use(express.static(pathName));
 
 // Handle all other routes by serving the React app
