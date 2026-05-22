@@ -15,11 +15,11 @@ console.log("=== RUNNING FRONTEND & BACKEND INTEGRATION BUILD ===");
 try {
   // 1. Install frontend dependencies
   console.log("\n1. Installing frontend dependencies...");
-  execSync("npx pnpm install", { cwd: frontendDir, stdio: "inherit" });
+  execSync("npx -y pnpm install", { cwd: frontendDir, stdio: "inherit" });
 
   // 2. Build the frontend
   console.log("\n2. Building frontend assets...");
-  execSync("npx pnpm run build", { cwd: frontendDir, stdio: "inherit" });
+  execSync("npx -y pnpm run build", { cwd: frontendDir, stdio: "inherit" });
 
   // 3. Clean up backend/dist if it exists
   console.log("\n3. Preparing backend/dist directory...");
