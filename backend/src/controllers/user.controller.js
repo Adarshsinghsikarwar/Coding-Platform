@@ -94,3 +94,19 @@ export const getSubmissionProblem = async (req, res) => {
     res.status(500).send("Server Error");
   }
 };
+
+export const getMySubmissions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const submissions = await submitModel
+      .find({ userId })
+      .populate("problemId", "title difficulty")
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.status(200).json({ success: true, submissions });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error: " + err.message });
+  }
+};
+

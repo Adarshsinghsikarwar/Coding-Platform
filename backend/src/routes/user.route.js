@@ -17,4 +17,9 @@ userRouter.get(
   authUser,
   userController.getSubmissionProblem
 );
+userRouter.get(
+  "/submissions",
+  authUser,
+  userController.getMySubmissions
+);
 export default userRouter;

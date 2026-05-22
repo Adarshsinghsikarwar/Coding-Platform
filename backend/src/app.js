@@ -1,5 +1,6 @@
 import express from "express";
 import dns from "dns";
+import path from "path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import authRoute from "./routes/auth.route.js";
@@ -25,7 +26,7 @@ app.use(
   cors({
     origin: config.FRONTEND_URL,
     credentials: true,
-  })
+  }),
 );
 
 // Passport - Google OAuth Strategy
@@ -62,8 +63,8 @@ passport.use(
       } catch (error) {
         return done(error, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 // Routes
@@ -71,6 +72,16 @@ app.use("/api/auth", authRoute);
 app.use("/api/problems", problemRoute);
 app.use("/api/user", userRoute);
 app.use("/api/problemSubmitting", submitRoute);
+
+
+// Serve static files from the React frontend build
+const pathName = path.resolve(path.join(path.resolve(), "dist"));
+app.use(express.static(pathName));
+
+// Handle all other routes by serving the React app
+app.use((req, res) => {
+  res.sendFile(path.join(pathName, "index.html"));
+});
 
 // Global error handler
 app.use((err, req, res, next) => {

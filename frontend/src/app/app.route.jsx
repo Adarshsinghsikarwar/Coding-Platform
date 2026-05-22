@@ -9,6 +9,7 @@ import ResetPassword from "../features/auth/pages/ResetPassword";
 import CreateProblem from "../features/Problem/pages/CreateProblem";
 import Admin from "../features/Problem/pages/Admin";
 import ProblemPage from "../features/user/pages/ProblemPage";
+import Profile from "../features/user/pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
   {
     path: "/problem/:problemId",
     element: <ProblemPage />,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
   },
 ]);
 
