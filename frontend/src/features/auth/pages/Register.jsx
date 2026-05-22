@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useSelector } from "react-redux";
 import { Link } from "react-router";
 import { useRegister } from "../hooks/useRegister";
+import { API_BASE } from "../../../api/apiConfig";
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "Name must be at least 2 characters"),
@@ -49,7 +50,7 @@ const Register = () => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:3000/api/auth/google";
+    window.location.href = `${API_BASE}/api/auth/google`;
   };
 
   return (

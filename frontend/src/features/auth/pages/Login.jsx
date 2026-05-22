@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useSelector } from "react-redux";
 import { Link } from "react-router";
 import { useLogin } from "../hooks/useLogin";
+import { API_BASE } from "../../../api/apiConfig";
 
 const loginSchema = z.object({
   emailId: z.string().email("Invalid email address"),
@@ -29,7 +30,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:3000/api/auth/google";
+    window.location.href = `${API_BASE}/api/auth/google`;
   };
 
   return (

@@ -2,8 +2,10 @@ import axios from "axios";
 import { store } from "../app/app.store";
 import { setUser, logout } from "../features/auth/auth.slice";
 
+export const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? "http://localhost:3000" : window.location.origin);
+
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: `${API_BASE}/api`,
   withCredentials: true, // sends the refreshToken cookie automatically
 });
 
