@@ -240,8 +240,8 @@ export async function verifyOtp(req, res) {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -338,8 +338,8 @@ export async function login(req, res) {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -371,8 +371,8 @@ export async function logout(req, res) {
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
     });
     res.status(200).json({ message: "Logout successful" });
   } catch (err) {
@@ -428,8 +428,8 @@ export async function logoutAll(req, res) {
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
     });
     res.status(200).json({ message: "All sessions logged out successfully" });
   } catch (err) {
@@ -482,8 +482,8 @@ export async function refreshToken(req, res) {
 
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -551,6 +551,9 @@ export async function deleteProfile(req, res) {
 // GET /api/auth/google/callback
 // ──────────────────────────────────────────────
 export async function googleCallback(req, res) {
+  const redirectOrigin = req.cookies.oauth_redirect_origin || config.FRONTEND_URL;
+  res.clearCookie("oauth_redirect_origin");
+
   try {
     const user = req.user; // Set by passport after Google auth
 
@@ -565,7 +568,7 @@ export async function googleCallback(req, res) {
 
       // Redirect to the set-password page with the temp token in URL
       return res.redirect(
-        `${config.FRONTEND_URL}/set-password?token=${tempToken}`
+        `${redirectOrigin}/set-password?token=${tempToken}`
       );
     }
 
@@ -579,16 +582,16 @@ export async function googleCallback(req, res) {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // Redirect to frontend with access token in URL
-    res.redirect(`${config.FRONTEND_URL}?accessToken=${accessToken}`);
+    res.redirect(`${redirectOrigin}?accessToken=${accessToken}`);
   } catch (err) {
     console.error("Error occurred during Google callback:", err);
-    res.redirect(`${config.FRONTEND_URL}/login?error=google_auth_failed`);
+    res.redirect(`${redirectOrigin}/login?error=google_auth_failed`);
   }
 }
 
@@ -647,8 +650,8 @@ export async function setPassword(req, res) {
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "none",
-      secure: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

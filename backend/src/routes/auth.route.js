@@ -6,6 +6,7 @@ import {
 import * as authControllers from "../controllers/auth.controller.js";
 import { authUser, authAdmin } from "../middlewares/auth.middleware.js";
 import passport from "passport";
+import { config } from "../config/config.js";
 
 const router = express.Router();
 
@@ -51,6 +52,23 @@ router.delete("/deleteProfile", authUser, authControllers.deleteProfile);
 // GET :  api/auth/google
 router.get(
   "/google",
+  (req, res, next) => {
+    let redirectOrigin = req.query.from || req.headers.referer || config.FRONTEND_URL;
+    try {
+      const url = new URL(redirectOrigin);
+      redirectOrigin = url.origin;
+    } catch (e) {
+      redirectOrigin = config.FRONTEND_URL;
+    }
+
+    res.cookie("oauth_redirect_origin", redirectOrigin, {
+      maxAge: 10 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+    next();
+  },
   passport.authenticate("google", {
     scope: ["profile", "email"],
   })
