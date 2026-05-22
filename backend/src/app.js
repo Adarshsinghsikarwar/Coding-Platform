@@ -1,4 +1,5 @@
 import express from "express";
+import dns from "dns";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import authRoute from "./routes/auth.route.js";
@@ -10,6 +11,9 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { config } from "./config/config.js";
 import userModel from "./models/user.model.js";
+
+// Set DNS servers early to avoid resolution issues for external APIs
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
 app.use(morgan("dev"));
