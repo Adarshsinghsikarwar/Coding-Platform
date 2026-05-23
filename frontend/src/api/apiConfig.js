@@ -64,6 +64,12 @@ api.interceptors.response.use(
         const response = await api.post("/auth/refreshToken");
         const newAccessToken = response.data.accessToken;
 
+        if (!newAccessToken) {
+          store.dispatch(logout());
+          window.location.href = "/login";
+          return Promise.reject(error);
+        }
+
         // Update the access token in Redux state
         const currentUser = store.getState().auth.user;
         store.dispatch(setUser({ user: currentUser, accessToken: newAccessToken }));

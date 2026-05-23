@@ -5,7 +5,7 @@ import {
   registerUser,
   reportInvalidRegistrationAttempt,
 } from "../services/auth.service";
-import { setLoading, setError, setOtpEmail } from "../auth.slice";
+import { setLoading, setError, setOtpEmail, setUser } from "../auth.slice";
 
 export function useRegister() {
   const dispatch = useDispatch();
@@ -25,12 +25,17 @@ export function useRegister() {
 
       const response = await registerUser(formData);
 
-      // Save email for OTP verification page
-      dispatch(setOtpEmail(response.data.email));
+      // Save user and token in state - logs user in directly
+      dispatch(
+        setUser({
+          user: response.data.user,
+          accessToken: response.data.accessToken,
+        })
+      );
       dispatch(setLoading(false));
 
-      // Navigate to OTP verification page
-      navigate("/verify-otp");
+      // Navigate to home page
+      navigate("/");
     } catch (error) {
       const responseData = error?.response?.data || {};
       const attemptedEmail =
@@ -48,10 +53,6 @@ export function useRegister() {
           ? responseData.error
           : responseData?.message || "Registration failed. Please try again.";
       dispatch(setError(message));
-
-      if (responseData?.requiresOtp === true) {
-        navigate("/verify-otp");
-      }
     } finally {
       setIsSubmitting(false);
       dispatch(setLoading(false));

@@ -15,16 +15,6 @@ export const loginUser = (data) => {
   return api.post("/auth/login", data);
 };
 
-// POST /auth/verify-otp
-export const verifyOtp = (data) => {
-  return api.post("/auth/verify-otp", data);
-};
-
-// POST /auth/resend-otp
-export const resendOtp = (data) => {
-  return api.post("/auth/resend-otp", data);
-};
-
 // GET /auth/me
 export const getMe = (accessToken) => {
   return api.get("/auth/me", {
@@ -47,12 +37,3 @@ export const setPassword = (data) => {
   return api.post("/auth/set-password", data);
 };
 
-// POST /auth/forgot-password
-export const forgotPassword = (data) => {
-  return api.post("/auth/forgot-password", data);
-};
-
-// POST /auth/reset-password
-export const resetPassword = (data) => {
-  return api.post("/auth/reset-password", data);
-};

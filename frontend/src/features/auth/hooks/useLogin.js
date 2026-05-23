@@ -31,13 +31,6 @@ export function useLogin() {
       const message =
         error.response?.data?.message || "Login failed. Please try again.";
       dispatch(setError(message));
-
-      // If user is not verified, redirect to OTP page
-      if (error.response?.status === 403 && error.response?.data?.email) {
-        const { setOtpEmail } = await import("../auth.slice");
-        dispatch(setOtpEmail(error.response.data.email));
-        navigate("/verify-otp");
-      }
     } finally {
       setIsSubmitting(false);
       dispatch(setLoading(false));

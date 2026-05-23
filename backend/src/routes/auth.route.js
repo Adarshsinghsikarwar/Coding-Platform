@@ -19,12 +19,6 @@ router.post(
   authControllers.reportInvalidRegistrationAttempt
 );
 
-// POST :  api/auth/verify-otp
-router.post("/verify-otp", authControllers.verifyOtp);
-
-// POST :  api/auth/resend-otp
-router.post("/resend-otp", authControllers.resendOtp);
-
 // POST :  api/auth/set-password  (for new Google users)
 router.post("/set-password", authControllers.setPassword);
 
@@ -86,11 +80,4 @@ router.get(
   }),
   authControllers.googleCallback
 );
-
-// POST :  api/auth/forgot-password
-router.post("/forgot-password", authControllers.forgotPassword);
-
-// POST :  api/auth/reset-password
-router.post("/reset-password", authControllers.resetPassword);
-
 export default router;

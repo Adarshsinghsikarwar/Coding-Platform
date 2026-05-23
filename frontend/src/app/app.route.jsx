@@ -1,11 +1,8 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import Home from "../features/Problem/pages/Home";
 import Login from "../features/auth/pages/Login";
 import Register from "../features/auth/pages/Register";
-import VerifyOtp from "../features/auth/pages/VerifyOtp";
 import SetPassword from "../features/auth/pages/SetPassword";
-import ForgotPassword from "../features/auth/pages/ForgotPassword";
-import ResetPassword from "../features/auth/pages/ResetPassword";
 import CreateProblem from "../features/Problem/pages/CreateProblem";
 import Admin from "../features/Problem/pages/Admin";
 import ProblemPage from "../features/user/pages/ProblemPage";
@@ -37,20 +34,8 @@ const router = createBrowserRouter([
     element: <Register />,
   },
   {
-    path: "/verify-otp",
-    element: <VerifyOtp />,
-  },
-  {
     path: "/set-password",
     element: <SetPassword />,
-  },
-  {
-    path: "/forgot-password",
-    element: <ForgotPassword />,
-  },
-  {
-    path: "/reset-password",
-    element: <ResetPassword />,
   },
   {
     path: "/problem/:problemId",
@@ -59,6 +44,10 @@ const router = createBrowserRouter([
   {
     path: "/profile",
     element: <Profile />,
+  },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   },
 ]);
 

@@ -80,11 +80,6 @@ const Login = () => {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Password</span>
-                <span className="label-text-alt">
-                  <Link to="/forgot-password" className="link link-hover text-primary">
-                    Forgot password?
-                  </Link>
-                </span>
               </label>
               <div className="relative">
                 <input
