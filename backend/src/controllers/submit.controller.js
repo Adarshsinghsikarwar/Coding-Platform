@@ -97,8 +97,6 @@ export const submitCode = async (req, res) => {
       sourceCodeForJudge = prepared.sourceCode;
     }
 
-    console.log(language);
-
     //    Fetch the problem from database
     const problem = await problemModel.findById(problemId);
     if (!problem) {
