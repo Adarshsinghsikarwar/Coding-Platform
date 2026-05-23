@@ -551,7 +551,10 @@ export async function deleteProfile(req, res) {
 // GET /api/auth/google/callback
 // ──────────────────────────────────────────────
 export async function googleCallback(req, res) {
-  const redirectOrigin = req.cookies.oauth_redirect_origin || config.FRONTEND_URL;
+  const fallbackOrigin = process.env.NODE_ENV === "production"
+    ? `${req.protocol}://${req.get("host")}`
+    : config.FRONTEND_URL;
+  const redirectOrigin = req.cookies.oauth_redirect_origin || fallbackOrigin;
   res.clearCookie("oauth_redirect_origin");
 
   try {

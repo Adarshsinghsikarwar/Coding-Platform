@@ -53,12 +53,15 @@ router.delete("/deleteProfile", authUser, authControllers.deleteProfile);
 router.get(
   "/google",
   (req, res, next) => {
-    let redirectOrigin = req.query.from || req.headers.referer || config.FRONTEND_URL;
+    const fallback = process.env.NODE_ENV === "production"
+      ? `${req.protocol}://${req.get("host")}`
+      : config.FRONTEND_URL;
+    let redirectOrigin = req.query.from || req.headers.referer || fallback;
     try {
       const url = new URL(redirectOrigin);
       redirectOrigin = url.origin;
     } catch (e) {
-      redirectOrigin = config.FRONTEND_URL;
+      redirectOrigin = fallback;
     }
 
     res.cookie("oauth_redirect_origin", redirectOrigin, {
