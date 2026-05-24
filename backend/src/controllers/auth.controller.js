@@ -141,20 +141,22 @@ export async function register(req, res) {
 
     // Send welcome email now that user is fully registered
     const welcomeHtml = getWelcomeHtml(newUser.firstName);
-    await sendEmail(
+    sendEmail(
       normalizedEmail,
       "Welcome to the Platform! 🚀",
       `Welcome ${newUser.firstName}! Your account has been created successfully. Happy coding!`,
       welcomeHtml
-    );
+    ).catch((err) => console.error("Error sending welcome email:", err));
 
     // Notify admin
-    await sendRegistrationSuccessAlert({
+    sendRegistrationSuccessAlert({
       firstName: newUser.firstName,
       emailId: newUser.emailId,
       ip: req.ip,
       userAgent: req.headers["user-agent"],
-    });
+    }).catch((err) =>
+      console.error("Error sending admin registration alert:", err)
+    );
 
     // Create session and tokens for auto login
     const { refreshToken, accessToken } = await createSessionAndTokens(
@@ -538,12 +540,12 @@ export async function setPassword(req, res) {
 
     // Send welcome email now that the account is fully set up
     const welcomeHtml = getWelcomeHtml(user.firstName);
-    await sendEmail(
+    sendEmail(
       user.emailId,
       "Welcome to the Platform! 🚀",
       `Welcome ${user.firstName}! Your account is ready. Happy coding!`,
       welcomeHtml
-    );
+    ).catch((err) => console.error("Error sending welcome email:", err));
 
     // Create session and return tokens — user is now logged in
     const { refreshToken, accessToken } = await createSessionAndTokens(

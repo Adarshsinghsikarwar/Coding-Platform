@@ -15,20 +15,22 @@ export const validate = async (req, res, next) => {
     if (isRegisterRoute && hasInvalidEmailError) {
       const attemptedEmail = req.body?.emailId || "(missing)";
 
-      const alertResult = await sendWrongEmailRegistrationAlert({
+      sendWrongEmailRegistrationAlert({
         attemptedEmail,
         reason: "Invalid email",
         ip: req.ip,
         userAgent: req.headers["user-agent"],
         source: "backend-validation",
+      }).then((alertResult) => {
+        if (!alertResult?.ok) {
+          console.warn(
+            "Admin registration alert was not sent:",
+            alertResult?.error || "Unknown reason"
+          );
+        }
+      }).catch((err) => {
+        console.error("Error sending registration alert:", err);
       });
-
-      if (!alertResult?.ok) {
-        console.warn(
-          "Admin registration alert was not sent:",
-          alertResult?.error || "Unknown reason"
-        );
-      }
     }
 
     return res.status(400).json({
